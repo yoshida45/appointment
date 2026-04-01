@@ -643,7 +643,11 @@ function onSlotClick(dk, v) {
     });
     ranges.push({ dk, startV: sv, endV: ev });
     ranges.sort((a, b) => {
-      if (a.dk !== b.dk) return a.dk < b.dk ? -1 : 1;
+      if (a.dk !== b.dk) {
+        const [ay, am, ad] = a.dk.split('/').map(Number);
+        const [by, bm, bd] = b.dk.split('/').map(Number);
+        return ay - by || am - bm || ad - bd;
+      }
       return a.startV - b.startV;
     });
     pendingStart = null;

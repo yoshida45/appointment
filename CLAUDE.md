@@ -9,10 +9,15 @@
 - 外部ライブラリ・フレームワーク不使用（バニラJS）
 - フォント: Google Fonts `Noto Sans JP`（400, 700）
 
+## ホスティング・デプロイ
+- **GitHub**: https://github.com/yoshida45/appointment
+- **Vercel**: GitHubリポジトリ連携による自動デプロイ（masterブランチへのpushで自動反映）
+
 ## ファイル構成
 ```
 appointment/
 ├── index.html       # アプリ本体（HTML/CSS/JS一体）
+├── .gitignore
 └── CLAUDE.md        # 本ファイル
 ```
 
@@ -69,6 +74,7 @@ appointment/
 ```
 - 各行は「・」で始まる
 - 日付フォーマット: `M/D(曜) HH:MM〜HH:MM`
+- 選択順に関わらず日付昇順でソート（同日内は開始時刻順）
 
 ## カラースキーム（CSS変数）
 | 変数 | 値 | 用途 |

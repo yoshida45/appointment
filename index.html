@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>打ち合わせ日時コピペツール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal: #5bbcb0;
+  --teal-light: #e0f5f2;
+  --navy: #100140;
+  --gray-bg: #f5f7f7;
+  --gray-border: #e0e0e0;
+  --red: #e57373;
+  --red-light: #fdeaea;
+  --blue-light: #e8f0fe;
+  --white: #fff;
+  --text: #333;
+  --text-light: #888;
+  --slot-h: 40px;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--gray-bg);
+  color: var(--text);
+  overflow-x: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* ヘッダー */
+.header {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.header-controls label {
+  font-size: 13px;
+  color: var(--text-light);
+}
+
+.header-controls select {
+  padding: 4px 8px;
+  border: 1px solid var(--gray-border);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--white);
+}
+
+.unit-toggle {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.unit-toggle button {
+  padding: 4px 10px;
+  border: 1px solid var(--gray-border);
+  border-radius: 4px;
+  background: var(--white);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.unit-toggle button.active {
+  background: var(--teal);
+  color: var(--white);
+  border-color: var(--teal);
+}
+
+/* 週ナビゲーション */
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.week-nav button {
+  background: var(--white);
+  border: 1px solid var(--gray-border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  color: var(--navy);
+}
+
+.week-nav button:hover {
+  background: var(--teal-light);
+  border-color: var(--teal);
+}
+
+.week-nav .week-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  min-width: 200px;
+  text-align: center;
+}
+
+/* カレンダー */
+.cal-wrap {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  overflow-x: auto;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: 44px repeat(7, 1fr);
+  gap: 1px;
+  min-width: 500px;
+}
+
+/* 日付ヘッダー */
+.dh {
+  text-align: center;
+  padding: 6px 2px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 4px;
+  line-height: 1.3;
+}
+
+.dh .dh-dow { font-size: 11px; }
+.dh .dh-day { font-size: 16px; }
+.dh .dh-holiday { font-size: 9px; color: var(--red); display: block; }
+
+.dh-sun { color: var(--red); background: var(--red-light); }
+.dh-sat { color: var(--teal); background: var(--teal-light); }
+.dh-holiday-bg { color: var(--red); background: var(--red-light); }
+
+/* 時間ラベル */
+.time-label {
+  font-size: 11px;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--slot-h);
+}
+
+/* スロット */
+.slot {
+  height: var(--slot-h);
+  border: 1px solid var(--gray-border);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  background: var(--white);
+}
+
+.slot:hover {
+  background: var(--teal-light);
+  border-color: var(--teal);
+}
+
+.slot.past {
+  background: #f0f0f0;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.slot.pending-start {
+  background: var(--teal-light);
+  border-color: var(--teal);
+  box-shadow: inset 0 0 0 2px var(--teal);
+}
+
+.slot.range-start {
+  background: var(--teal);
+  border-color: var(--teal);
+  border-radius: 3px 3px 0 0;
+}
+
+.slot.range-mid {
+  background: var(--teal);
+  border-color: var(--teal);
+  border-radius: 0;
+  opacity: 0.75;
+}
+
+.slot.range-end {
+  background: var(--teal);
+  border-color: var(--teal);
+  border-radius: 0 0 3px 3px;
+}
+
+.slot.range-single {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
+.slot.range-start::after,
+.slot.range-end::after,
+.slot.range-single::after {
+  position: absolute;
+  font-size: 10px;
+  color: var(--white);
+  font-weight: 700;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+.slot.range-start::after { content: attr(data-start-label); }
+.slot.range-end::after { content: attr(data-end-label); }
+.slot.range-single::after { content: attr(data-single-label); }
+
+.hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+/* 結果パネル */
+.result-wrap {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.result-header h3 {
+  font-size: 14px;
+  color: var(--navy);
+}
+
+.result-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  padding: 6px 14px;
+  border: 1px solid var(--gray-border);
+  border-radius: 4px;
+  background: var(--white);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.btn:hover { background: var(--gray-bg); }
+
+.btn-teal {
+  background: var(--teal);
+  color: var(--white);
+  border-color: var(--teal);
+}
+
+.btn-teal:hover {
+  background: #4aa99e;
+}
+
+.btn-red {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.btn-red:hover {
+  background: var(--red-light);
+}
+
+#resultText {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text);
+  min-height: 40px;
+  padding: 8px;
+  background: var(--gray-bg);
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+
+.result-empty {
+  color: var(--text-light);
+  font-size: 13px;
+}
+
+/* コピー成功通知 */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--navy);
+  color: var(--white);
+  padding: 10px 24px;
+  border-radius: 24px;
+  font-size: 14px;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* レスポンシブ */
+@media (max-width: 767px) {
+  .container { padding: 8px; }
+  .header-title { font-size: 16px; }
+  .cal-grid { min-width: 360px; grid-template-columns: 36px repeat(7, 1fr); }
+  .slot { height: 36px; }
+  .time-label { height: 36px; font-size: 10px; }
+  .dh { font-size: 11px; }
+  .dh .dh-day { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="header-title">打ち合わせ日時コピペツール</div>
+    <div class="header-controls">
+      <label>表示時間</label>
+      <select id="startHour"></select>
+      <span>〜</span>
+      <select id="endHour"></select>
+      <div class="unit-toggle">
+        <button id="unit60" class="active" onclick="setUnit(60)">60分</button>
+        <button id="unit30" onclick="setUnit(30)">30分</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 週ナビゲーション -->
+  <div class="week-nav">
+    <button onclick="changeWeek(-1)">◀</button>
+    <div class="week-label" id="weekLabel"></div>
+    <button onclick="changeWeek(1)">▶</button>
+  </div>
+
+  <p class="hint">時間をタップすると候補が追加されます（1タップ目:開始 → 2タップ目:終了）</p>
+
+  <!-- カレンダー -->
+  <div class="cal-wrap">
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <!-- 結果パネル -->
+  <div class="result-wrap">
+    <div class="result-header">
+      <h3>選択中の候補</h3>
+      <div class="result-actions">
+        <button class="btn btn-red" onclick="clearAll()">クリア</button>
+        <button class="btn btn-teal" onclick="copyResult()">まとめてコピー</button>
+      </div>
+    </div>
+    <div id="resultText"><span class="result-empty">候補が選択されていません</span></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// 日本の祝日データ（2024〜2027年）
+const HOLIDAYS = {
+  "2024/1/1":"元日","2024/1/8":"成人の日","2024/2/11":"建国記念の日","2024/2/12":"振替休日",
+  "2024/2/23":"天皇誕生日","2024/3/20":"春分の日","2024/4/29":"昭和の日","2024/5/3":"憲法記念日",
+  "2024/5/4":"みどりの日","2024/5/5":"こどもの日","2024/5/6":"振替休日","2024/7/15":"海の日",
+  "2024/8/11":"山の日","2024/8/12":"振替休日","2024/9/16":"敬老の日","2024/9/22":"秋分の日",
+  "2024/9/23":"振替休日","2024/10/14":"スポーツの日","2024/11/3":"文化の日","2024/11/4":"振替休日",
+  "2024/11/23":"勤労感謝の日","2025/1/1":"元日","2025/1/13":"成人の日","2025/2/11":"建国記念の日",
+  "2025/2/23":"天皇誕生日","2025/2/24":"振替休日","2025/3/20":"春分の日","2025/4/29":"昭和の日",
+  "2025/5/3":"憲法記念日","2025/5/4":"みどりの日","2025/5/5":"こどもの日","2025/5/6":"振替休日",
+  "2025/7/21":"海の日","2025/8/11":"山の日","2025/9/15":"敬老の日","2025/9/23":"秋分の日",
+  "2025/10/13":"スポーツの日","2025/11/3":"文化の日","2025/11/23":"勤労感謝の日","2025/11/24":"振替休日",
+  "2026/1/1":"元日","2026/1/12":"成人の日","2026/2/11":"建国記念の日","2026/2/23":"天皇誕生日",
+  "2026/3/20":"春分の日","2026/4/29":"昭和の日","2026/5/3":"憲法記念日","2026/5/4":"みどりの日",
+  "2026/5/5":"こどもの日","2026/5/6":"振替休日","2026/7/20":"海の日","2026/8/11":"山の日",
+  "2026/9/21":"敬老の日","2026/9/22":"振替休日","2026/9/23":"秋分の日","2026/10/12":"スポーツの日",
+  "2026/11/3":"文化の日","2026/11/23":"勤労感謝の日","2027/1/1":"元日","2027/1/11":"成人の日",
+  "2027/2/11":"建国記念の日","2027/2/23":"天皇誕生日","2027/3/21":"春分の日","2027/4/29":"昭和の日",
+  "2027/5/3":"憲法記念日","2027/5/4":"みどりの日","2027/5/5":"こどもの日","2027/7/19":"海の日",
+  "2027/8/11":"山の日","2027/9/20":"敬老の日","2027/9/23":"秋分の日","2027/10/11":"スポーツの日",
+  "2027/11/3":"文化の日","2027/11/23":"勤労感謝の日"
+};
+
+const DOW = ["日","月","火","水","木","金","土"];
+
+let ranges = [];
+let pendingStart = null;
+let startHour = 9;
+let endHour = 18;
+let unitMin = 60;
+let weekOffset = 0;
+
+// 初期化
+function init() {
+  const selStart = document.getElementById('startHour');
+  const selEnd = document.getElementById('endHour');
+  for (let h = 0; h <= 23; h++) {
+    selStart.add(new Option(h + '時', h));
+    selEnd.add(new Option(h + '時', h));
+  }
+  selStart.value = startHour;
+  selEnd.value = endHour;
+  selStart.onchange = () => { startHour = +selStart.value; buildCalendar(); };
+  selEnd.onchange = () => { endHour = +selEnd.value; buildCalendar(); };
+
+  // 金・土曜は翌週をデフォルト表示
+  const today = new Date();
+  const dow = today.getDay();
+  if (dow === 5 || dow === 6) weekOffset = 1;
+
+  buildCalendar();
+  updateResult();
+  updatePreview();
+}
+
+function setUnit(min) {
+  unitMin = min;
+  document.getElementById('unit60').classList.toggle('active', min === 60);
+  document.getElementById('unit30').classList.toggle('active', min === 30);
+  pendingStart = null;
+  buildCalendar();
+}
+
+function changeWeek(dir) {
+  weekOffset += dir;
+  pendingStart = null;
+  buildCalendar();
+}
+
+function getWeekDays(offset) {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dayOfWeek + 1 + offset * 7);
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
+function dateKey(d) {
+  return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+}
+
+function slotLabel(v) {
+  const h = Math.floor(v);
+  const m = (v % 1) * 60;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+
+function getSlotValues() {
+  const values = [];
+  const step = unitMin === 30 ? 0.5 : 1;
+  for (let v = startHour; v < endHour; v += step) {
+    values.push(v);
+  }
+  return values;
+}
+
+function isPast(d, v) {
+  const now = new Date();
+  const slotDate = new Date(d);
+  slotDate.setHours(Math.floor(v), (v % 1) * 60, 0, 0);
+  return slotDate < now;
+}
+
+function getRangeRole(dk, v) {
+  for (let i = 0; i < ranges.length; i++) {
+    const r = ranges[i];
+    if (r.dk !== dk) continue;
+    if (r.startV === r.endV && v === r.startV) return { role: 'single', idx: i };
+    if (v === r.startV) return { role: 'start', idx: i };
+    if (v === r.endV) return { role: 'end', idx: i };
+    if (v > r.startV && v < r.endV) return { role: 'mid', idx: i };
+  }
+  return null;
+}
+
+function buildCalendar() {
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const days = getWeekDays(weekOffset);
+  const values = getSlotValues();
+
+  // 週ラベル更新
+  const first = days[0];
+  const last = days[6];
+  document.getElementById('weekLabel').textContent =
+    `${first.getMonth()+1}/${first.getDate()} 〜 ${last.getMonth()+1}/${last.getDate()}`;
+
+  // ヘッダー行：左上空白 + 7日
+  grid.appendChild(createEl('div', ''));
+  days.forEach(d => {
+    const dk = dateKey(d);
+    const dow = d.getDay();
+    const holiday = HOLIDAYS[dk];
+    const el = document.createElement('div');
+    el.className = 'dh';
+    if (holiday) el.classList.add('dh-holiday-bg');
+    else if (dow === 0) el.classList.add('dh-sun');
+    else if (dow === 6) el.classList.add('dh-sat');
+
+    el.innerHTML = `<div class="dh-dow">${DOW[dow]}</div><div class="dh-day">${d.getDate()}</div>${holiday ? '<span class="dh-holiday">' + holiday + '</span>' : ''}`;
+    grid.appendChild(el);
+  });
+
+  // タイムスロット行
+  values.forEach(v => {
+    // 時間ラベル
+    const tl = document.createElement('div');
+    tl.className = 'time-label';
+    tl.textContent = slotLabel(v);
+    grid.appendChild(tl);
+
+    days.forEach(d => {
+      const dk = dateKey(d);
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.dataset.dk = dk;
+      slot.dataset.v = v;
+
+      if (isPast(d, v)) {
+        slot.classList.add('past');
+      } else {
+        slot.onclick = () => onSlotClick(dk, v);
+      }
+
+      // pending表示
+      if (pendingStart && pendingStart.dk === dk && pendingStart.v === v) {
+        slot.classList.add('pending-start');
+      }
+
+      // 確定済み範囲の表示
+      const role = getRangeRole(dk, v);
+      if (role) {
+        const r = ranges[role.idx];
+        const step = unitMin === 30 ? 0.5 : 1;
+        switch (role.role) {
+          case 'single':
+            slot.classList.add('range-single');
+            slot.dataset.singleLabel = slotLabel(r.startV) + '-' + slotLabel(r.endV + step);
+            break;
+          case 'start':
+            slot.classList.add('range-start');
+            slot.dataset.startLabel = slotLabel(r.startV);
+            break;
+          case 'end':
+            slot.classList.add('range-end');
+            slot.dataset.endLabel = slotLabel(r.endV + step);
+            break;
+          case 'mid':
+            slot.classList.add('range-mid');
+            break;
+        }
+      }
+
+      grid.appendChild(slot);
+    });
+  });
+}
+
+function onSlotClick(dk, v) {
+  if (!pendingStart) {
+    // 1タップ目
+    pendingStart = { dk, v };
+  } else if (pendingStart.dk !== dk) {
+    // 別の日をタップ → 新しいpendingに変更
+    pendingStart = { dk, v };
+  } else {
+    // 2タップ目（同じ日）
+    let sv = pendingStart.v;
+    let ev = v;
+    if (ev < sv) {
+      // 終了が開始より前なら入れ替え
+      [sv, ev] = [ev, sv];
+    }
+    // 重複チェック・除去
+    ranges = ranges.filter(r => {
+      if (r.dk !== dk) return true;
+      return r.endV < sv || r.startV > ev;
+    });
+    ranges.push({ dk, startV: sv, endV: ev });
+    ranges.sort((a, b) => {
+      if (a.dk !== b.dk) return a.dk < b.dk ? -1 : 1;
+      return a.startV - b.startV;
+    });
+    pendingStart = null;
+    updateResult();
+  }
+  buildCalendar();
+}
+
+function formatRange(r) {
+  const step = unitMin === 30 ? 0.5 : 1;
+  const parts = r.dk.split('/');
+  const d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+  const dow = DOW[d.getDay()];
+  return `${parts[1]}/${parts[2]}(${dow}) ${slotLabel(r.startV)}〜${slotLabel(r.endV + step)}`;
+}
+
+function updateResult() {
+  const el = document.getElementById('resultText');
+  if (ranges.length === 0) {
+    el.innerHTML = '<span class="result-empty">候補が選択されていません</span>';
+    return;
+  }
+  el.textContent = ranges.map(r => '・' + formatRange(r)).join('\n');
+}
+
+function getResultText() {
+  if (ranges.length === 0) return '';
+  return ranges.map(r => '・' + formatRange(r)).join('\n');
+}
+
+function clearAll() {
+  ranges = [];
+  pendingStart = null;
+  buildCalendar();
+  updateResult();
+  updatePreview();
+}
+
+function copyResult() {
+  const text = getResultText();
+  if (!text) { showToast('候補を選択してください'); return; }
+  navigator.clipboard.writeText(text).then(() => showToast('コピーしました'));
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function createEl(tag, text) {
+  const el = document.createElement(tag);
+  el.textContent = text;
+  return el;
+}
+
+init();
+</script>
+</body>
+</html>
